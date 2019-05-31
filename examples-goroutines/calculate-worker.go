@@ -18,7 +18,17 @@ func getRandomNumber(qty int) int {
 	return rand.Intn(int(max))
 }
 
-func main(){
+func mainSecuential(){
+	list := []int{4, 5, 7}
+	result := []int {}
+	for _, qty := range list {
+		result = append(result, getRandomNumber(qty))
+	}
+
+	fmt.Println(result)
+}
+
+func mainConcurrent(){
 	list := []int{4, 5, 7}
 	numberOfCalculations := len(list)
 	resultList := []int {}
@@ -37,4 +47,9 @@ func main(){
 	
 	fmt.Println(resultList)
 
+}
+
+func main(){
+	//mainSecuential()
+	mainConcurrent()
 }
