@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"sync"
+	"github.com/gorilla/mux"
+	"net/http"
+	"strconv"
+	"log"
 )
 
 var (
@@ -30,16 +34,46 @@ func extract(index int, value int, wg *sync.WaitGroup) {
 	//mutex.Unlock()
 }
 
+func depositHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	value, _ := strconv.Atoi(params["value"])
+
+	balance += value
+	w.WriteHeader(http.StatusOK)
+	fmt.Printf("Extraccion: %d. Balance en la cuenta: %d\n", value, balance)
+}
+
+func extractHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	value, _ := strconv.Atoi(params["value"])
+
+	balance -= value
+	w.WriteHeader(http.StatusOK)
+	fmt.Printf("Extraccion: %d. Balance en la cuenta: %d\n", value, balance)
+}
+
+func concurrentActionHandler(w http.ResponseWriter, r *http.Request) {
+	var waitG sync.WaitGroup
+	params := mux.Vars(r)
+	cant, _ := strconv.Atoi(params["cantActions"])
+
+	for i := 1; i <= cant; i++ {
+		waitG.Add(2)
+    go extract(i, 200, &waitG)
+		go deposit(i, 200, &waitG)
+	}
+
+	waitG.Wait()
+}
+
 func main() {
 	fmt.Println("¡Bienvenidos a GObank!")
 
-	var w sync.WaitGroup
-	for i := 1; i <= 100; i++ {
-		w.Add(2)        
-		go extract(i, 200, &w)
-		go deposit(i, 200, &w)
-	}		
-	w.Wait()
+	r := mux.NewRouter()
+	r.HandleFunc("/deposit/{value}", depositHandler).Methods("GET")
+	r.HandleFunc("/deposit/{value}", extractHandler).Methods("GET")
+	// r.HandleFunc("/actions/{cantActions}", actionHandler).Methods("GET")
+	r.HandleFunc("/concurrentActions/{cantActions}", concurrentActionHandler).Methods("GET")
 
-	fmt.Printf("Balance final: %d\n", balance)
+	log.Fatal(http.ListenAndServe("locahost:8000", r))
 }
