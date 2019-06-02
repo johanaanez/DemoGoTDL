@@ -17,8 +17,8 @@ func hasAvailableBalance(client chan Client){
 	}else{
 		fmt.Printf("Client: %s has negative balance \n", clientData.cuil)
 	}
-
 }
+
 
 func main() {
 	fmt.Println("Start")
@@ -33,10 +33,11 @@ func main() {
 	//Se le pasa el channel vacío, no tiene data para procesar
 	go hasAvailableBalance(clientCh)
 
-	fmt.Println("Routine does not receive channel value yet")
+	fmt.Println("Routine did not receive channel value yet")
 
-	//La rutina empieza recién acá cuando recibe el dato que necesita para procesar
+	//La rutina recibe el dato que necesita para procesar
 	clientCh <- client
 
 	fmt.Println("End")
 }
+

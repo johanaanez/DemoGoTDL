@@ -5,12 +5,13 @@ import (
 	"time"
 )
 
-func isHomeBankingAvailable() {
-	now := time.Now()
-	if (now.Weekday() == time.Saturday || now.Weekday() == time.Sunday || now.Hour() < 10 || now.Hour()>14 ) {
-		fmt.Println("Closed")
+
+func isHomeBankingAvailable(now chan time.Time) {
+	date := <-now
+	if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday || date.Hour() < 10 || date.Hour() > 14 {
+		fmt.Println("Bank is close")
 	} else {
-		fmt.Println("Open")
+		fmt.Println("Bank is open")
 	}
 }
 
@@ -20,13 +21,16 @@ func getDollarsToBuy(value chan int) {
 	fmt.Printf("Dollars : %d \n", convertedValue)
 }
 
+
 func main() {
 	fmt.Println("Start")
 	client := Client{"23939477654", 46000}
 	channel := make(chan int)
 	clientCh := make(chan Client)
+	now := make(chan time.Time)
 
-	go isHomeBankingAvailable()
+	go isHomeBankingAvailable(now)
+	now <- time.Now()
 	time.Sleep(1 * time.Millisecond)
 
 	go getDollarsToBuy(channel)
@@ -34,6 +38,7 @@ func main() {
 
 	go hasAvailableBalance(clientCh)
 	clientCh <- client
+	time.Sleep(1 * time.Millisecond)
 
 	fmt.Println("End")
 }
