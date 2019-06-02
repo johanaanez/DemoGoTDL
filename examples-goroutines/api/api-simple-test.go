@@ -5,11 +5,16 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
 	"github.com/gin-gonic/gin"
 )
 
 const qtyServices = 3
+
+var userBalances = []int {2000, 1000, 2500, 5000}
+
+var dolarValue = []int {46, 45, 48}
+
+var mutex	sync.Mutex
 
 type Result struct {
 	ServiceId int
@@ -20,9 +25,10 @@ type Result struct {
 type ResultDto struct {
 	Valid   bool
 	Message string
+	Balance int
 }
 
-// todoModel describes a todoModel type
+// POST body type
 type MakeBuyDto struct {
 	AccountNumber int `json:"AccountNumber" binding:"required"`
 	Amount        int `json:"Amount" binding:"required"`
@@ -39,36 +45,39 @@ func getValue(bottom int, top int) int {
 
 //------------------------
 // three external services
-func getExchangeRate() Result {
+func getExchangeRate(timeId int) Result {
 	delay()
-	return Result{0, getValue(4000, 6000), true}
+	return Result{0, dolarValue[timeId], true}
 }
 
-func validateOperationalTime() Result {
+func validateOperationalTime(hour int) Result {
 	delay()
-	var hour = getValue(0, 2400)
-	var valid = ((hour >= 900) && (hour <= 1300))
+	var valid = ((hour >= 10) && (hour <= 2300))
 	return Result{1, 0, valid}
 }
 
-func getUserBalanceAccount() Result {
+func getUserBalanceAccount(userId int) Result {
 	delay()
-	return Result{2, getValue(100000, 1000000), true}
+	return Result{2, userBalances[userId], true}
 }
 
 //------------------------
-func consumeServices() []Result {
+func consumeServices(userId int) []Result {
 	var results = []Result{}
-	results = append(results, getExchangeRate())
-	results = append(results, validateOperationalTime())
-	results = append(results, getUserBalanceAccount())
+	results = append(results, getExchangeRate(getValue(0, 2)))
+	results = append(results, validateOperationalTime(getValue(0, 2400)))
+	results = append(results, getUserBalanceAccount(userId))
 	return results
 }
-func confirmOperation(accountNumber int, paidAmount int) bool {
-	return true
+
+func confirmOperation(accountNumber int, paidAmount int) (bool, int) {
+	mutex.Lock()
+	userBalances[accountNumber] -= paidAmount
+	mutex.Unlock()
+	return true, userBalances[accountNumber]
 }
 
-func validateOperation(amount int, accountNumber int, serviceResults []Result) bool {
+func validateOperation(amount int, accountNumber int, serviceResults []Result) (bool, int) {
 	var isValidOperationalTime = serviceResults[1].Valid
 	var exchangeRate = serviceResults[0].Value
 	var accountBalance = serviceResults[2].Value
@@ -78,37 +87,37 @@ func validateOperation(amount int, accountNumber int, serviceResults []Result) b
 	if (isValidOperationalTime) && (accountBalance >= paidAmount) {
 		return confirmOperation(accountNumber, paidAmount)
 	} else {
-		return false
+		return false, accountBalance
 	}
 }
 
 func buyForeingCurrency(amount int, accountNumber int) ResultDto {
-	var valid = validateOperation(amount, accountNumber, consumeServices())
+	var valid, balance = validateOperation(amount, accountNumber, consumeServices(accountNumber))
 
 	if valid {
-		return ResultDto{valid, "Operation Confirmed"}
+		return ResultDto{valid, "Operation Confirmed", balance}
 	} else {
-		return ResultDto{valid, "Operation Invalid"}
+		return ResultDto{valid, "Operation Invalid", balance}
 	}
 }
 
 //--------------------------------
 //functions for concurrent process
-func callServiceAsync(service func() Result, results chan<- Result, wg *sync.WaitGroup) {
-	results <- service()
+func callServiceAsync(service func(a int) Result, results chan<- Result, wg *sync.WaitGroup, value int) {
+	results <- service(value)
 	wg.Done()
 }
 
-func consumeServicesConcurrent() []Result {
+func consumeServicesConcurrent(userId int) []Result {
 	var results = make([]Result, qtyServices)
 	resultsChan := make(chan Result, qtyServices)
 
 	var w sync.WaitGroup
 	w.Add(qtyServices)
 
-	go callServiceAsync(getExchangeRate, resultsChan, &w)
-	go callServiceAsync(validateOperationalTime, resultsChan, &w)
-	go callServiceAsync(getUserBalanceAccount, resultsChan, &w)
+	go callServiceAsync(getExchangeRate, resultsChan, &w, getValue(0, 2))
+	go callServiceAsync(validateOperationalTime, resultsChan, &w, getValue(0, 2400))
+	go callServiceAsync(getUserBalanceAccount, resultsChan, &w, userId)
 
 	w.Wait()
 
@@ -122,11 +131,11 @@ func consumeServicesConcurrent() []Result {
 }
 
 func buyForeingCurrencyConcurrent(amount int, accountNumber int) ResultDto {
-	var valid = validateOperation(amount, accountNumber, consumeServicesConcurrent())
+	var valid, balance = validateOperation(amount, accountNumber, consumeServicesConcurrent(accountNumber))
 	if valid {
-		return ResultDto{valid, "Operation Confirmed"}
+		return ResultDto{valid, "Operation Confirmed", balance}
 	} else {
-		return ResultDto{valid, "Operation Invalid"}
+		return ResultDto{valid, "Operation Invalid", balance}
 	}
 }
 
