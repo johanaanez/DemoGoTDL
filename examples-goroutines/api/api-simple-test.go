@@ -1,21 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"net/http"
 	"sync"
 	"time"
+
 	"github.com/gin-gonic/gin"
 )
 
 const qtyServices = 3
 
-var userBalances = []int {2000, 1000, 2500, 5000}
+var userBalances = []int{2000, 1000, 2500, 5000}
 
-var dolarValue = []int {46, 45, 48}
+var dolarValue = []int{46, 45, 48}
 
-var mutex	sync.Mutex
+var mutex sync.Mutex
 
 type Result struct {
 	ServiceId int
@@ -36,7 +36,7 @@ type MakeBuyDto struct {
 }
 
 func delay() {
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 }
 
 func getValue(bottom int, top int) int {
@@ -44,11 +44,45 @@ func getValue(bottom int, top int) int {
 	return rand.Intn(int(top-bottom)) + bottom
 }
 
+func getExchangeRate1(timeId int, rate chan<- int) {
+	time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
+	rate <- dolarValue[timeId]
+}
+
+func getExchangeRate2(timeId int, rate chan<- int) {
+	time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
+	rate <- dolarValue[timeId]
+}
+
+func getExchangeRate3(timeId int, rate chan<- int) {
+	time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
+	rate <- dolarValue[timeId]
+}
+
 //------------------------
 // three external services
 func getExchangeRate(timeId int) Result {
 	delay()
-	return Result{0, dolarValue[timeId], true}
+	exchangeRateChannel1 := make(chan int)
+	exchangeRateChannel2 := make(chan int)
+	exchangeRateChannel3 := make(chan int)
+
+	go getExchangeRate1(timeId, exchangeRateChannel1)
+	go getExchangeRate2(timeId, exchangeRateChannel2)
+	go getExchangeRate3(timeId, exchangeRateChannel3)
+
+	var exchangeRate int
+
+	select {
+
+	case response := <-exchangeRateChannel1:
+		exchangeRate = response
+	case response := <-exchangeRateChannel2:
+		exchangeRate = response
+	case response := <-exchangeRateChannel3:
+		exchangeRate = response
+	}
+	return Result{0, exchangeRate, true}
 }
 
 func validateOperationalTime(hour int) Result {
@@ -74,7 +108,6 @@ func consumeServices(userId int) []Result {
 func confirmOperation(accountNumber int, paidAmount int) (bool, int) {
 	mutex.Lock()
 	userBalances[accountNumber] -= paidAmount
-	fmt.Printf("Compra de dolares correcta, se debito de la cuenta %d : %d. El saldo actual es %d\n", accountNumber, paidAmount, userBalances[accountNumber])
 	mutex.Unlock()
 	return true, userBalances[accountNumber]
 }
@@ -93,7 +126,6 @@ func validateOperation(amount int, accountNumber int, serviceResults []Result) (
 }
 
 func buyForeingCurrency(amount int, accountNumber int) ResultDto {
-	fmt.Printf("Inicio de compra de dolares para la cuenta %d por un monto de %d\n", accountNumber, amount)
 	var valid, balance = validateOperation(amount, accountNumber, consumeServices(accountNumber))
 
 	if valid {
@@ -113,6 +145,7 @@ func callServiceAsync(service func(a int) Result, results chan<- Result, wg *syn
 func consumeServicesConcurrent(userId int) []Result {
 	var results = make([]Result, qtyServices)
 	resultsChan := make(chan Result, qtyServices)
+	defer close(resultsChan)
 
 	var w sync.WaitGroup
 	w.Add(qtyServices)
@@ -123,17 +156,14 @@ func consumeServicesConcurrent(userId int) []Result {
 
 	w.Wait()
 
-	for i := 0; i <= qtyServices-1; i++ {
-		r := <-resultsChan
-		results[r.ServiceId] = r
+	for servicesResults := range resultsChan {
+		results[servicesResults.ServiceId] = servicesResults
 	}
 
-	close(resultsChan)
 	return results
 }
 
 func buyForeingCurrencyConcurrent(amount int, accountNumber int) ResultDto {
-	fmt.Printf("Inicio de compra de dolares para la cuenta %d por un monto de %d\n", accountNumber, amount)
 	var valid, balance = validateOperation(amount, accountNumber, consumeServicesConcurrent(accountNumber))
 	if valid {
 		return ResultDto{valid, "Operation Confirmed", balance}
