@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -73,6 +74,7 @@ func consumeServices(userId int) []Result {
 func confirmOperation(accountNumber int, paidAmount int) (bool, int) {
 	mutex.Lock()
 	userBalances[accountNumber] -= paidAmount
+	fmt.Printf("Compra de dolares correcta, se debito de la cuenta %d : %d. El saldo actual es %d\n", accountNumber, paidAmount, userBalances[accountNumber])
 	mutex.Unlock()
 	return true, userBalances[accountNumber]
 }
@@ -81,7 +83,6 @@ func validateOperation(amount int, accountNumber int, serviceResults []Result) (
 	var isValidOperationalTime = serviceResults[1].Valid
 	var exchangeRate = serviceResults[0].Value
 	var accountBalance = serviceResults[2].Value
-
 	var paidAmount = amount * exchangeRate
 
 	if (isValidOperationalTime) && (accountBalance >= paidAmount) {
@@ -92,6 +93,7 @@ func validateOperation(amount int, accountNumber int, serviceResults []Result) (
 }
 
 func buyForeingCurrency(amount int, accountNumber int) ResultDto {
+	fmt.Printf("Inicio de compra de dolares para la cuenta %d por un monto de %d\n", accountNumber, amount)
 	var valid, balance = validateOperation(amount, accountNumber, consumeServices(accountNumber))
 
 	if valid {
@@ -131,6 +133,7 @@ func consumeServicesConcurrent(userId int) []Result {
 }
 
 func buyForeingCurrencyConcurrent(amount int, accountNumber int) ResultDto {
+	fmt.Printf("Inicio de compra de dolares para la cuenta %d por un monto de %d\n", accountNumber, amount)
 	var valid, balance = validateOperation(amount, accountNumber, consumeServicesConcurrent(accountNumber))
 	if valid {
 		return ResultDto{valid, "Operation Confirmed", balance}
