@@ -6,23 +6,22 @@ import (
 
 //Public struct
 type Client struct {
-	cuil     string
-	balance float64
+	cuil  string
+	saldo float64
 }
 
-func hasAvailableBalance(client chan Client){
+func hasAvailableBalance(client chan Client) {
 	clientData := <-client
-	if clientData.balance >= 0 {
-		fmt.Printf("Client: %s has positive balance \n", clientData.cuil)
-	}else{
-		fmt.Printf("Client: %s has negative balance \n", clientData.cuil)
+	if clientData.saldo > 0 {
+		fmt.Printf("Cliente: %s tiene saldo \n", clientData.cuil)
+	} else {
+		fmt.Printf("Client: %s no tiene saldo \n", clientData.cuil)
 	}
 }
 
-
 func main() {
 	fmt.Println("Start")
-	client := Client{"27939477654", 100}
+	client := Client{"27123456784", 100}
 
 	//Creacion de el channel, como puntero
 	clientCh := make(chan Client)
@@ -40,4 +39,3 @@ func main() {
 
 	fmt.Println("End")
 }
-
