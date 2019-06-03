@@ -26,8 +26,9 @@ func consumeServicesConcurrent(userId int) []Result {
 
 	w.Wait()
 
-	for servicesResults := range resultsChan {
-		results[servicesResults.ServiceId] = servicesResults
+	for i := 0; i <= qtyServices-1; i++ {
+		r := <-resultsChan
+		results[r.ServiceId] = r
 	}
 
 	return results
