@@ -2,9 +2,9 @@ package main
 
 func consumeServices(userId int) []Result {
 	var results = []Result{}
-	results = append(results, getExchangeRate(getValue(0, 2)))
+	results = append(results, getExchangeRate0(getValue(0, 2)))
 	results = append(results, validateOperationalTime(getValue(0, 2400)))
-	results = append(results, getExchangeRate0(userId))
+	results = append(results, getUserBalanceAccount(userId))
 	return results
 }
 
