@@ -78,7 +78,13 @@ func validateOperationalTime(hour int) Result {
 	return Result{1, 0, valid}
 }
 
-func getUserBalanceAccount(userId int) Result {
+func getUserBalanceAccount(userId int) (result Result) {
+	defer func() {
+		if panicError := recover(); panicError != nil {
+			result = Result{2, 0, false}
+		}
+	}()
+
 	delay()
 	return Result{2, userBalances[userId], true}
 }

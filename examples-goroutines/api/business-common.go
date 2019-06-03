@@ -17,6 +17,10 @@ func validateOperation(amount int, accountNumber int, serviceResults []Result) (
 	var accountBalance = serviceResults[2].Value
 	var paidAmount = amount * exchangeRate
 
+	if !serviceResults[2].Valid {
+		panic("operation invalid")
+	}
+
 	if (isValidOperationalTime) && (accountBalance >= paidAmount) {
 		return confirmOperation(accountNumber, paidAmount)
 	} else {

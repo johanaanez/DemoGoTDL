@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -34,11 +35,17 @@ func consumeServicesConcurrent(userId int) []Result {
 	return results
 }
 
-func buyForeingCurrencyConcurrent(amount int, accountNumber int) ResultDto {
+func buyForeingCurrencyConcurrent(amount int, accountNumber int) (result ResultDto, err error) {
+	defer func() {
+		if panicError := recover(); panicError != nil {
+			err = errors.New("crital error ocurred")
+		}
+	}()
+
 	var valid, balance = validateOperation(amount, accountNumber, consumeServicesConcurrent(accountNumber))
 	if valid {
-		return ResultDto{valid, "Operation Confirmed", balance}
+		return ResultDto{valid, "Operation Confirmed", balance}, nil
 	} else {
-		return ResultDto{valid, "Operation Invalid", balance}
+		return ResultDto{valid, "Operation Invalid", balance}, nil
 	}
 }

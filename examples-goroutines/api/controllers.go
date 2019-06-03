@@ -26,9 +26,13 @@ func makeBuy(c *gin.Context) {
 		return
 	}
 
-	var resultDto = buyForeingCurrency(data.Amount, data.AccountNumber)
+	var resultDto, err = buyForeingCurrency(data.Amount, data.AccountNumber)
 
-	c.JSON(http.StatusOK, resultDto)
+	if err == nil {
+		c.JSON(http.StatusOK, resultDto)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 }
 
 func makeBuyConcurrent(c *gin.Context) {
@@ -38,7 +42,11 @@ func makeBuyConcurrent(c *gin.Context) {
 		return
 	}
 
-	var resultDto = buyForeingCurrencyConcurrent(data.Amount, data.AccountNumber)
+	var resultDto, err = buyForeingCurrencyConcurrent(data.Amount, data.AccountNumber)
 
-	c.JSON(http.StatusOK, resultDto)
+	if err == nil {
+		c.JSON(http.StatusOK, resultDto)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 }
