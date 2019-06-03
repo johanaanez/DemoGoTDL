@@ -7,7 +7,7 @@ import (
 
 var userBalances = []int{2000, 1000, 2500, 5000}
 
-var dolarValue = []int{46, 45, 48}
+var dolarValue = []int{46, 45, 48, 49}
 
 type Result struct {
 	ServiceId int
