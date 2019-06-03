@@ -24,6 +24,14 @@ func getValue(bottom int, top int) int {
 	return rand.Intn(int(top-bottom)) + bottom
 }
 
+// simple mock for get exchangeRate
+func getExchangeRate0(timeId int) Result {
+	delay()
+	return Result{0, dolarValue[timeId], true}
+}
+
+// multiple services for concurrent use
+// in order to get exchangeRate
 func getExchangeRate1(timeId int, rate chan<- int) {
 	time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
 	rate <- dolarValue[timeId]
@@ -39,7 +47,7 @@ func getExchangeRate3(timeId int, rate chan<- int) {
 	rate <- dolarValue[timeId]
 }
 
-// three external services
+// three external services mocks
 func getExchangeRate(timeId int) Result {
 	delay()
 	exchangeRateChannel1 := make(chan int)
