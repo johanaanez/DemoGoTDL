@@ -74,7 +74,7 @@ func getExchangeRate(timeId int) Result {
 
 func validateOperationalTime(hour int) Result {
 	delay()
-	var valid = ((hour >= 10) && (hour <= 18))
+	var valid = ((hour >= 10) && (hour <= 2300))
 	return Result{1, 0, valid}
 }
 

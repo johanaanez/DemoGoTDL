@@ -38,15 +38,21 @@ function error_msg() {
 
 
 EXPECTED_OUTPUT_SECUENTIAL=("200")
+EXPECTED_OUTPUT_SECUENTIAL_ERR=("500")
 
 EXPECTED_OUTPUT_CONCURRENT=("200")
+EXPECTED_OUTPUT_CONCURRENT_ERR=("500")
 
 function get_data() {
   echo -e "{\"AccountNumber\":1,\"Amount\":2}" 
 }
 
+function get_data_error() {
+  echo -e "{\"AccountNumber\":-10,\"Amount\":2}" 
+}
+
 function test_endpoint_secuential(){
-  header "TEST ENDPOINT SECUENTIAL"
+  header "TEST ENDPOINT SECUENTIAL - STATUS 200"
 
 	commands=("curl -X POST -H 'Content-Type:application/json' --data "$(get_data)" http://localhost:8080/api/v1/bank/buy  --write-out %{http_code} --output /dev/null --silent")
 
@@ -61,8 +67,24 @@ function test_endpoint_secuential(){
     fi
 }
 
+function test_endpoint_secuential_err(){
+  header "TEST ENDPOINT SECUENTIAL - STATUS 500"
+
+	commands=("curl -X POST -H 'Content-Type:application/json' --data "$(get_data_error)" http://localhost:8080/api/v1/bank/buy  --write-out %{http_code} --output /dev/null --silent")
+
+		msg "$commands"
+
+		ACTUAL_OUTPUT=$(curl -X POST -H 'Content-Type:application/json' --data "$(get_data_error)" http://localhost:8080/api/v1/bank/buy  --write-out %{http_code} --output /dev/null --silent)
+
+    if [[ "$EXPECTED_OUTPUT_SECUENTIAL_ERR" == "$ACTUAL_OUTPUT" ]]; then
+      msg_true "$EXPECTED_OUTPUT_SECUENTIAL_ERR" "$ACTUAL_OUTPUT"
+    else
+      msg_false "$EXPECTED_OUTPUT_SECUENTIAL_ERR" "$ACTUAL_OUTPUT"
+    fi
+}
+
 function test_endpoint_concurrent(){
-  header "TEST ENDPOINT CONCURRENT"
+  header "TEST ENDPOINT CONCURRENT - STATUS 200"
 
 	commands=("curl -X POST -H 'Content-Type:application/json' --data "$(get_data)" http://localhost:8080/api/v1/bank/buyc  --write-out %{http_code} --output /dev/null --silent")
 
@@ -77,5 +99,21 @@ function test_endpoint_concurrent(){
     fi
 }
 
+function test_endpoint_concurrent_err(){
+  header "TEST ENDPOINT CONCURRENT - STATUS 500"
+
+	commands=("curl -X POST -H 'Content-Type:application/json' --data "$(get_data_error)" http://localhost:8080/api/v1/bank/buyc  --write-out %{http_code} --output /dev/null --silent")
+
+		msg "$commands"
+
+		ACTUAL_OUTPUT=$(curl -X POST -H 'Content-Type:application/json' --data "$(get_data_error)" http://localhost:8080/api/v1/bank/buyc  --write-out %{http_code} --output /dev/null --silent)
+
+    if [[ "$EXPECTED_OUTPUT_CONCURRENT_ERR" == "$ACTUAL_OUTPUT" ]]; then
+      msg_true "$EXPECTED_OUTPUT_CONCURRENT_ERR" "$ACTUAL_OUTPUT"
+    else
+      msg_false "$EXPECTED_OUTPUT_CONCURRENT_ERR" "$ACTUAL_OUTPUT"
+    fi
+}
+
 test_endpoint_secuential
-test_endpoint_concurrent
+test_endpoint_secuential_err

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -13,18 +14,23 @@ func callServiceAsync(service func(a int) Result, results chan<- Result, wg *syn
 	wg.Done()
 }
 
+func inform(wg *sync.WaitGroup) {
+	fmt.Print("call to services done \n")
+	wg.Done()
+}
+
 func consumeServicesConcurrent(userId int) []Result {
 	var results = make([]Result, qtyServices)
 	resultsChan := make(chan Result, qtyServices)
 	defer close(resultsChan)
 
 	var w sync.WaitGroup
-	w.Add(qtyServices)
+	w.Add(qtyServices + 1)
 
 	go callServiceAsync(getExchangeRate, resultsChan, &w, getValue(0, 2))
 	go callServiceAsync(validateOperationalTime, resultsChan, &w, getValue(0, 2400))
 	go callServiceAsync(getUserBalanceAccount, resultsChan, &w, userId)
-
+	go inform(&w)
 	w.Wait()
 
 	for i := 0; i <= qtyServices-1; i++ {
