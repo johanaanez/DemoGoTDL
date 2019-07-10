@@ -25,12 +25,12 @@ func consumeServicesConcurrent(userId int) []Result {
 	defer close(resultsChan)
 
 	var w sync.WaitGroup
-	w.Add(qtyServices + 1)
+	w.Add(qtyServices)
 
 	go callServiceAsync(getExchangeRate, resultsChan, &w, getValue(0, 2))
 	go callServiceAsync(validateOperationalTime, resultsChan, &w, getValue(0, 2400))
 	go callServiceAsync(getUserBalanceAccount, resultsChan, &w, userId)
-	go inform(&w)
+	//go inform(&w)
 	w.Wait()
 
 	for i := 0; i <= qtyServices-1; i++ {
